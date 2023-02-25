@@ -1,27 +1,59 @@
-﻿using Util;
+﻿using OpenTK.Mathematics;
+using Util;
 //using System.Numerics;
 
 namespace rt004;
 
 internal class Program
 {
-  static void Main(string[] args)
-  {
-    // Parameters.
-    // TODO: parse command-line arguments and/or your config file.
-    int wid = 600;
-    int hei = 450;
-    string fileName = "demo.pfm";
+    const double DiffuseCoefficient = 1.0;
 
-    // HDR image.
-    FloatImage fi = new FloatImage(wid, hei, 3);
+    static void Main(string[] args)
+    {
+        Config.Load(args[0]);
 
-    // TODO: put anything interesting into the image.
-    // TODO: use fi.PutPixel() function, pixel should be a float[3] array [R, G, B]
+        List<Shape> scene = new List<Shape> {
+            new Plane { point = Vector3d.Zero, normal = Vector3d.UnitY },
+            new Sphere { position = new Vector3d(-1, 1, 3), radius = 1 }
+        };
+        Light light = new DirectionalLight(new Vector3d(-1, -1, 1), 1);
+        Camera cam = Camera.Create(Vector3d.UnitY, Quaterniond.Identity, Math.PI / 2);
 
-    //fi.SaveHDR(fileName);   // Doesn't work well yet...
-    fi.SavePFM(fileName);
+        // HDR image.
+        FloatImage fi = new FloatImage(Config.Width, Config.Height, 3);
 
-    Console.WriteLine("HDR image is finished.");
-  }
+        for (int x = 0; x < Config.Width; x++)
+        {
+            for (int y = 0; y < Config.Height; y++)
+            {
+                Ray ray = cam.GenerateRay(x, y);
+                RayHit? closest = null;
+                foreach (var shape in scene)
+                {
+                    RayHit? hit = shape.IntersectRay(ray);
+                    if (closest == null || (hit != null && hit.Value.Distance < closest.Value.Distance))
+                        closest = hit;
+                }
+
+                if (closest.HasValue)
+                {
+                    RayHit hit = closest.Value;
+                    float diff = (float)(light.GetIntensity(hit.Point) * DiffuseCoefficient * Vector3d.Dot(-light.GetDirection(hit.Point), hit.Normal));
+
+                    fi.PutPixel(x, y, new float[] { diff, diff, diff });
+                }
+                else
+                {
+                    fi.PutPixel(x, y, Config.BackgroundColor);
+                }
+
+                //fi.PutPixel(x, y, new float[] { x / (float)Config.Width, y / (float)Config.Height, 1f });
+            }
+        }
+
+        //fi.SaveHDR(fileName);   // Doesn't work well yet...
+        fi.SavePFM(Config.OutputFilename);
+
+        Console.WriteLine("HDR image is finished.");
+    }
 }
