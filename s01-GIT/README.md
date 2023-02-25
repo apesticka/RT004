@@ -11,5 +11,3 @@
   [Another MarkDown page](https://www.markdownguide.org/basic-syntax/)
 * Grant me the R/O permissions if your repository is private �
   <https://gitlab.mff.cuni.cz/pelikan>, <https://github.com/pepcape>
-
-**This is a test!!!**
