@@ -1,0 +1,12 @@
+﻿<config>
+	<width>800</width>
+	<height>600</height>
+	<output>demo.pfm</output>
+	<background>
+		<color>
+			<r>0.20392157</r>
+			<g>0.5254902</g>
+			<b>0.92156863</b>
+		</color>
+	</background>
+</config>
