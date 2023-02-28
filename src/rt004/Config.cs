@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Globalization;
+using System.Xml;
 
 namespace rt004
 {
@@ -53,7 +54,7 @@ namespace rt004
 
         static float ParseFloat(string value)
         {
-            if (float.TryParse(value, out float v)) return v;
+            if (float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float v)) return v;
             else throw new FormatException($"Invalid float: {value}");
         }
 
