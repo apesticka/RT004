@@ -31,6 +31,9 @@ namespace rt004
         public static Colorf operator *(Colorf c, float a)
             => a * c;
 
+        public static Colorf operator *(Colorf a, Colorf b)
+            => new(a.r * b.r, a.g * b.g, a.b * b.b);
+
         public static explicit operator float[] (Colorf color) => new float[3] { color.r, color.g, color.b };
     }
 }
