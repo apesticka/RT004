@@ -4,6 +4,8 @@ namespace rt004
 {
     internal abstract class Shape
     {
+        public Colorf color;
+
         public abstract RayHit? IntersectRay(Ray ray);
     }
 

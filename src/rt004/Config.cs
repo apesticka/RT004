@@ -8,7 +8,7 @@ namespace rt004
         public static int Width { get; private set; } = 600;
         public static int Height { get; private set; } = 450;
         public static string OutputFilename { get; private set; } = "demo.pfm";
-        public static float[] BackgroundColor { get; private set; } = new float[] { 0, 0, 0 };
+        public static Colorf BackgroundColor { get; private set; } = Colorf.BLACK;
 
         // TODO: camera options, color01/color255, shapes, lights
 
@@ -58,28 +58,25 @@ namespace rt004
             else throw new FormatException($"Invalid float: {value}");
         }
 
-        static float[] ParseColor(XmlNode node)
+        static Colorf ParseColor(XmlNode node)
         {
             if (node == null) throw new FormatException("Expected color node");
             if (node.Name != "color") throw new FormatException($"Expected color node, found {node.Name} instead");
 
-            float[] output = new float[3];
+            float r = 0, g = 0, b = 0;
             foreach (XmlNode child in node.ChildNodes)
             {
-                int index = child.Name switch
+                float val = ParseFloat(child.InnerText);
+                switch (child.Name)
                 {
-                    "r" => 0,
-                    "g" => 1,
-                    "b" => 2,
-                    _ => -1
+                    case "r": r = val; break;
+                    case "g": g = val; break;
+                    case "b": b = val; break;
+                    default: throw new FormatException($"Invalid color parameter: {child.Name}");
                 };
-
-                if (index == -1) throw new FormatException($"Invalid color parameter: {child.Name}");
-
-                output[index] = ParseFloat(child.InnerText);
             }
 
-            return output;
+            return new Colorf(r, g, b);
         }
     }
 }
