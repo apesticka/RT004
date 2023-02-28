@@ -35,7 +35,7 @@ namespace rt004
             return instance;
         }
 
-        public Ray GenerateRay(int x, int y)
+        public Ray GenerateRay(float x, float y)
         {
             double dx = windowSize.X;
             double dy = windowSize.Y;
