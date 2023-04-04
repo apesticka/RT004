@@ -4,9 +4,9 @@
 	<output>demo.pfm</output>
 	<background>
 		<color>
-			<r>0.20392157</r>
-			<g>0.5254902</g>
-			<b>0.92156863</b>
+      <r>0.1</r>
+      <g>0.2</g>
+      <b>0.3</b>
 		</color>
 	</background>
 </config>

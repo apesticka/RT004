@@ -4,18 +4,18 @@ namespace rt004
 {
     internal abstract class Light
     {
-        protected double baseIntensity;
-        protected Colorf color;
+        protected Colorf intensity;
 
-        public Colorf Color => color;
-
-        protected Light(double baseIntensity, Colorf? color = null)
+        protected Light(Colorf intensity)
         {
-            this.baseIntensity = baseIntensity;
-            this.color = color ?? Colorf.WHITE;
+            this.intensity = intensity;
         }
 
-        public abstract double GetIntensity(Vector3d worldPoint);
+        protected Light(float baseIntensity, Colorf baseColor) : this(baseIntensity * baseColor) { }
+
+        protected Light(float intensity) : this(intensity * Colorf.WHITE) { }
+
+        public abstract Colorf GetIntensity(Vector3d worldPoint);
 
         /// <summary>
         /// Returns a *normalized* direction vector
@@ -23,18 +23,37 @@ namespace rt004
         public abstract Vector3d GetDirection(Vector3d worldPoint);
     }
 
+    internal abstract class PositionedLight : Light
+    {
+        public Vector3d position;
+
+        protected PositionedLight(Colorf intensity) : base(intensity) { }
+        protected PositionedLight(float baseIntensity, Colorf baseColor) : base(baseIntensity, baseColor) { }
+        protected PositionedLight(float intensity) : base(intensity) { }
+    }
+
     internal class DirectionalLight : Light
     {
         Vector3d direction;
 
-        public DirectionalLight(Vector3d direction, double intensity, Colorf? color = null) : base(intensity, color)
+        public DirectionalLight(Vector3d direction, Colorf intensity) : base(intensity)
+        {
+            this.direction = direction;
+        }
+
+        public DirectionalLight(Vector3d direction, float intensity) : base(intensity)
         {
             this.direction = direction.Normalized();
         }
 
-        public override double GetIntensity(Vector3d worldPoint)
+        public DirectionalLight(Vector3d direction, float baseIntensity, Colorf baseColor) : base(baseIntensity, baseColor)
         {
-            return baseIntensity;
+            this.direction = direction;
+        }
+
+        public override Colorf GetIntensity(Vector3d worldPoint)
+        {
+            return intensity;
         }
 
         public override Vector3d GetDirection(Vector3d worldPoint)
@@ -43,11 +62,19 @@ namespace rt004
         }
     }
 
-    internal class PointLight : Light
+    internal class PointLight : PositionedLight
     {
-        Vector3d position;
+        public PointLight(Vector3d position, Colorf intensity) : base(intensity)
+        {
+            this.position = position;
+        }
 
-        public PointLight(Vector3d position, double baseIntensity, Colorf? color = null) : base(baseIntensity, color)
+        public PointLight(Vector3d position, float intensity) : base(intensity)
+        {
+            this.position = position;
+        }
+
+        public PointLight(Vector3d position, float baseIntensity, Colorf baseColor) : base(baseIntensity, baseColor)
         {
             this.position = position;
         }
@@ -57,9 +84,9 @@ namespace rt004
             return (worldPoint - position).Normalized();
         }
 
-        public override double GetIntensity(Vector3d worldPoint)
+        public override Colorf GetIntensity(Vector3d worldPoint)
         {
-            return baseIntensity / (worldPoint - position).LengthSquared;
+            return intensity/* / (float)(worldPoint - position).LengthSquared*/;
         }
     }
 }

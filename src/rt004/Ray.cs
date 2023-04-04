@@ -19,5 +19,6 @@ namespace rt004
         public Vector3d Point { get; init; }
         public Vector3d Normal { get; init; }
         public double Distance { get; init; }
+        public Shape Shape { get; init; }
     }
 }

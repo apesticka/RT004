@@ -10,29 +10,13 @@ namespace rt004
         Matrix3d rotationMatrix;
         Vector3d windowSize;
 
-        private static Camera instance = null;
-        public static Camera Singleton => instance;
-
-        private Camera(Vector3d position, Quaterniond rotation, double fov)
+        public Camera(Vector3d position, Quaterniond rotation, double fov)
         {
             this.position = position;
             this.rotation = rotation;
             rotationMatrix = Matrix3d.CreateFromQuaternion(rotation);
             this.fov = fov;
             windowSize = new Vector3d(Math.Sin(fov / 2), Math.Sin(fov / 2) * Config.Height / Config.Width, Math.Cos(fov / 2));
-        }
-
-        public static Camera Create(Vector3d position, Quaterniond rotation, double fov)
-        {
-            if (instance != null)
-            {
-                Console.WriteLine("Warning: Cannot create a second camera.");
-                return instance;
-            }
-
-            instance = new Camera(position, rotation, fov);
-
-            return instance;
         }
 
         public Ray GenerateRay(float x, float y)
@@ -50,7 +34,7 @@ namespace rt004
             Vector3d bottom = Vector3d.Lerp(bottomLeft, bottomRight, x / (double)Config.Width);
             Vector3d direction = Vector3d.Lerp(top, bottom, y / (double)Config.Height);
 
-            return new Ray(position, direction);
+            return new Ray(position, direction.Normalized());
         }
     }
 }

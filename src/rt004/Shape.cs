@@ -4,7 +4,7 @@ namespace rt004
 {
     internal abstract class Shape
     {
-        public Colorf color;
+        public Material material;
 
         public abstract RayHit? IntersectRay(Ray ray);
     }
@@ -50,7 +50,7 @@ namespace rt004
             Vector3d point = ray.Origin + distance * ray.Direction;
             Vector3d normal = (point - position).Normalized();
 
-            return new RayHit { Point = point, Normal = normal, Distance = distance };
+            return new RayHit { Point = point, Normal = normal, Distance = distance, Shape = this };
         }
     }
 
@@ -69,7 +69,7 @@ namespace rt004
 
             double t = -num / denom;
             if (t >= 0)
-                return new RayHit { Point = ray.Origin + ray.Direction * t, Normal = normal, Distance = t };
+                return new RayHit { Point = ray.Origin + ray.Direction * t, Normal = normal, Distance = t, Shape = this };
             else
                 return null;
         }
