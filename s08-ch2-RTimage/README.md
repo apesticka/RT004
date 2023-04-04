@@ -11,5 +11,12 @@ I'll check your command-line program and try to modify your scene
 to see what happens... At least two solids and two light sources
 should be used in the scene.
 
+# Sample
+A sample scene with three spheres and two point light sources
+is provided for reference: [scene definition](sample-scene.md).
+You should get similar result if you use the same scene definition.
+
+![Sample result](sample-raycasting.jpg)
+
 # Your Documentation
 Use the [separate file DOC.md](DOC.md) to avoid merge conflicts.
