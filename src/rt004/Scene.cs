@@ -7,9 +7,9 @@ using Util;
 
 namespace rt004
 {
-    internal class Scene
+    public class Scene
     {
-        const int RECURSION_DEPTH = 8;
+        static int RECURSION_DEPTH => Config.Instance.General.MaxDepth;
 
         public Shape[] shapes { get; init; }
         public Light[] lights { get; init; }
@@ -32,7 +32,7 @@ namespace rt004
             {
                 RayHit hit = closest.Value;
 
-                Material mat = hit.Shape.material ?? Program.DefaultMaterial;
+                Material mat = hit.Shape.Material ?? Program.DefaultMaterial;
 
                 Colorf color = mat.Evaluate(this, hit.Point, -ray.Direction, hit.Normal, Program.AmbientIntensity, depth);
 
@@ -40,7 +40,7 @@ namespace rt004
             }
             else
             {
-                return Config.BackgroundColor;
+                return Config.Instance.General.BackgroundColor;
             }
         }
 

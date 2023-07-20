@@ -1,25 +1,32 @@
 ﻿using OpenTK.Mathematics;
+using System.Xml.Serialization;
 
 namespace rt004
 {
-    internal abstract class Shape
+    public abstract class Shape
     {
-        public Material material;
+        [XmlAttribute("material")]
+        public string MaterialString;
+        [XmlIgnore]
+        public Material Material => Config.Instance.Materials.Materials[MaterialString];
 
         public abstract RayHit? IntersectRay(Ray ray);
     }
 
-    internal sealed class Sphere : Shape
+    public sealed class Sphere : Shape
     {
-        public Vector3d position;
-        public double radius;
+        [XmlIgnore] public Vector3d Center;
+        [XmlAttribute("radius")] public double Radius;
+
+        [XmlAttribute("center")]
+        public string CenterConfig { get => Center.ToString(); set => Center = Config.VectorFromString(value); }
 
         public override RayHit? IntersectRay(Ray ray)
         {
             ray.Direction.Normalize();
-            double dx = ray.Origin.X - position.X;
-            double dy = ray.Origin.Y - position.Y;
-            double dz = ray.Origin.Z - position.Z;
+            double dx = ray.Origin.X - Center.X;
+            double dy = ray.Origin.Y - Center.Y;
+            double dz = ray.Origin.Z - Center.Z;
 
             double a = (
                 ray.Direction.X * ray.Direction.X +
@@ -37,7 +44,7 @@ namespace rt004
                 dx * dx +
                 dy * dy +
                 dz * dz -
-                radius * radius
+                Radius * Radius
             );
 
             double D = b * b - 4 * a * c;
@@ -55,30 +62,35 @@ namespace rt004
                 if (distance == t2) distance = t1;
             }
             Vector3d point = ray.Origin + distance * ray.Direction;
-            Vector3d normal = (point - position).Normalized();
+            Vector3d normal = (point - Center).Normalized();
 
             return new RayHit { Point = point, Normal = normal, Distance = distance, Shape = this };
         }
     }
 
-    internal sealed class Plane : Shape
+    public sealed class Plane : Shape
     {
-        public Vector3d point;
-        public Vector3d normal;
+        [XmlIgnore] public Vector3d Point;
+        [XmlIgnore] public Vector3d Normal;
+
+        [XmlAttribute("point")]
+        public string PointConfig { get => Point.ToString(); set => Point = Config.VectorFromString(value); }
+        [XmlAttribute("normal")]
+        public string NormalConfig { get => Normal.ToString(); set => Normal = Config.VectorFromString(value); }
 
         public override RayHit? IntersectRay(Ray ray)
         {
             Vector3d dir = Vector3d.Normalize(ray.Direction);
-            Vector3d originOffset = ray.Origin - point;
+            Vector3d originOffset = ray.Origin - Point;
 
-            double num = -Vector3d.Dot(normal, originOffset);
-            double denom = Vector3d.Dot(normal, dir);
+            double num = -Vector3d.Dot(Normal, originOffset);
+            double denom = Vector3d.Dot(Normal, dir);
 
             if (Math.Abs(denom) < 0.0001) return null;
 
             double t = num / denom;
             if (t >= 0)
-                return new RayHit { Point = ray.Origin + dir * t, Normal = normal, Distance = t, Shape = this };
+                return new RayHit { Point = ray.Origin + dir * t, Normal = Normal, Distance = t, Shape = this };
             else
                 return null;
         }

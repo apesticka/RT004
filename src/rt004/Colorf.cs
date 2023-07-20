@@ -4,15 +4,22 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace rt004
 {
-    internal struct Colorf
+    public struct Colorf
     {
         public static Colorf WHITE => new Colorf(1, 1, 1);
         public static Colorf BLACK => new Colorf(0, 0, 0);
 
-        public float r, g, b;
+        [XmlAttribute("r")]
+        public float r;
+        [XmlAttribute("g")]
+        public float g;
+        [XmlAttribute("b")]
+        public float b;
 
         public Colorf(float r, float g, float b)
         {
@@ -54,5 +61,23 @@ namespace rt004
         public static implicit operator Colorf(Color color) => new(color.R / 255f, color.G / 255f, color.B / 255f);
 
         public static explicit operator float[] (Colorf color) => new float[3] { color.r, color.g, color.b };
+
+        public static implicit operator Colorf(string s)
+        {
+            return new Colorf(0.3f, 0.3f, 0.3f);
+        }
+
+        public override string ToString() => $"[{r},{g},{b}]";
+
+        internal static Colorf FromString(string colorString)
+        {
+            if (colorString == "") return new();
+            if (colorString[0] != '[' || colorString[^1] != ']') throw new FormatException($"Wrong color string: \"{colorString}\". Color string must be enclosed in brackets");
+            string[] stringComponents = colorString[1..^1].Split(',');
+            float[] floatComponents = new float[3];
+            for (int i = 0; i < floatComponents.Length; i++)
+                if (stringComponents.Length > i) floatComponents[i] = float.Parse(stringComponents[i].Trim());
+            return new Colorf(floatComponents[0], floatComponents[1], floatComponents[2]);
+        }
     }
 }

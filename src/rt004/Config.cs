@@ -1,82 +1,161 @@
-﻿using System.Globalization;
-using System.Xml;
+﻿using OpenTK.Mathematics;
+using System.Numerics;
+using System.Xml.Serialization;
 
 namespace rt004
 {
-    internal static class Config
+    [XmlRoot("config")]
+    public class Config
     {
-        public static int Width { get; private set; } = 600;
-        public static int Height { get; private set; } = 450;
-        public static string OutputFilename { get; private set; } = "demo.pfm";
-        public static Colorf BackgroundColor { get; private set; } = Colorf.BLACK;
+        public static Config Instance { get => instance; }
+        private static Config instance;
 
-        // TODO: camera options, color01/color255, shapes, lights
+        [XmlElement("general")]
+        public GeneralConfig General;
+        [XmlElement("camera")]
+        public CameraConfig Camera;
+        [XmlElement("materials")]
+        public MaterialsConfig Materials;
+        [XmlElement("scene")]
+        public SceneConfig Scene;
 
         public static void Load(string filename)
         {
-            XmlDocument doc = new XmlDocument();
-            doc.Load(filename);
+            XmlSerializer serializer = new XmlSerializer(typeof(Config));
+            using FileStream fs = new FileStream(filename, FileMode.Open);
 
-            foreach (XmlNode node in doc.DocumentElement.ChildNodes)
+            instance = (Config)serializer.Deserialize(fs);
+            Console.WriteLine("Config loaded:");
+            Console.WriteLine($"    Materials: {Instance.Materials.MaterialsList.Count}");
+            Console.WriteLine($"    Shapes: {Instance.Scene.Shapes.Shapes.Length}");
+            Console.WriteLine($"    Lights: {Instance.Scene.Lights.Lights.Length} + ambient");
+            Console.WriteLine();
+
+            if (Instance.Camera.Direction == Vector3d.Zero) throw new Exception("Camera must have a non-zero direction");
+            if (Instance.Camera.Up == Vector3d.Zero) throw new Exception("Camera must have a non-zero up direction");
+
+            instance.Materials.CreateIndex();
+            Console.WriteLine("Materials index created");
+            Console.WriteLine();
+        }
+
+        public Scene CreateScene()
+        {
+            Shape[] shapes = Scene.Shapes.Shapes;
+            Light[] lights = Scene.Lights.Lights;
+            Camera cam = Camera.CreateCamera();
+
+            return new Scene
             {
-                ProcessNode(node);
+                shapes = shapes,
+                lights = lights,
+                cam = cam
+            };
+        }
+
+        public struct Vector3
+        {
+            [XmlAttribute("x")] public double X;
+            [XmlAttribute("y")] public double Y;
+            [XmlAttribute("z")] public double Z;
+
+            public static implicit operator Vector3d(Vector3 v)
+            {
+                return new Vector3d(v.X, v.Y, v.Z);
+            }
+
+            public override string ToString()
+            {
+                return ((Vector3d)this).ToString();
             }
         }
 
-        static void ProcessNode(XmlNode node)
+        public static Vector3d VectorFromString(string vectorString)
         {
-            string parameter = node.Name;
+            if (vectorString == "") return new();
+            if (vectorString[0] != '[' || vectorString[^1] != ']') throw new FormatException($"Wrong color string: \"{vectorString}\". Color string must be enclosed in brackets");
+            string[] stringComponents = vectorString[1..^1].Split(',');
+            float[] floatComponents = new float[3];
+            for (int i = 0; i < floatComponents.Length; i++)
+                if (stringComponents.Length > i) floatComponents[i] = float.Parse(stringComponents[i].Trim());
+            return new Vector3d(floatComponents[0], floatComponents[1], floatComponents[2]);
+        }
+    }
 
-            switch (parameter)
+    public class GeneralConfig
+    {
+        [XmlElement("shadows")]
+        public bool Shadows;
+        [XmlElement("reflections")]
+        public bool Reflections;
+        [XmlElement("maxdepth")]
+        public int MaxDepth;
+        [XmlElement("background")]
+        public Colorf BackgroundColor;
+        [XmlElement("output")]
+        public string OutputFilename;
+    }
+
+    public class CameraConfig
+    {
+        [XmlElement("width")]
+        public int Width;
+        [XmlElement("height")]
+        public int Height;
+        [XmlElement("center")]
+        public Config.Vector3 Center;
+        [XmlElement("dir")]
+        public Config.Vector3 Direction;
+        [XmlElement("up")]
+        public Config.Vector3 Up;
+        [XmlElement("fov")]
+        public double Fov;
+
+        internal Camera CreateCamera()
+        {
+            return new Camera(Center, Direction, Up, Fov / 180.0 * Math.PI);
+        }
+    }
+
+    public class MaterialsConfig
+    {
+        [XmlElement(typeof(PhongMaterial), ElementName = "phong")]
+        [XmlElement(typeof(UnlitMaterial), ElementName = "unlit")]
+        public List<Material> MaterialsList;
+
+        [XmlIgnore]
+        public Dictionary<string, Material> Materials;
+
+        public void CreateIndex()
+        {
+            Materials = new Dictionary<string, Material>();
+            foreach (Material material in MaterialsList)
             {
-                case "width":
-                    Width = ParseInt(node.InnerText);
-                    return;
-                case "height":
-                    Height = ParseInt(node.InnerText);
-                    return;
-                case "output":
-                    OutputFilename = node.InnerText;
-                    return;
-                case "background":
-                    BackgroundColor = ParseColor(node.FirstChild);
-                    return;
+                Materials[material.Id] = material;
             }
+        }
+    }
 
-            throw new FormatException($"Invalid parameter: {parameter}");
+    public class SceneConfig
+    {
+        [XmlElement("shapes")] public ShapesConfig Shapes;
+        [XmlElement("lights")] public LightsConfig Lights;
+
+        public class ShapesConfig
+        {
+            [XmlElement(typeof(Sphere), ElementName = "sphere")]
+            [XmlElement(typeof(Plane), ElementName = "plane")]
+            public Shape[] Shapes;
         }
 
-        static int ParseInt(string value)
+        public class LightsConfig
         {
-            if (int.TryParse(value, out int v)) return v;
-            else throw new FormatException($"Invalid int: {value}");
-        }
+            [XmlElement("ambient")]
+            public Light Ambient;
 
-        static float ParseFloat(string value)
-        {
-            if (float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float v)) return v;
-            else throw new FormatException($"Invalid float: {value}");
-        }
-
-        static Colorf ParseColor(XmlNode node)
-        {
-            if (node == null) throw new FormatException("Expected color node");
-            if (node.Name != "color") throw new FormatException($"Expected color node, found {node.Name} instead");
-
-            float r = 0, g = 0, b = 0;
-            foreach (XmlNode child in node.ChildNodes)
-            {
-                float val = ParseFloat(child.InnerText);
-                switch (child.Name)
-                {
-                    case "r": r = val; break;
-                    case "g": g = val; break;
-                    case "b": b = val; break;
-                    default: throw new FormatException($"Invalid color parameter: {child.Name}");
-                };
-            }
-
-            return new Colorf(r, g, b);
+            [XmlElement(typeof(PointLight), ElementName = "point")]
+            [XmlElement(typeof(DirectionalLight), ElementName = "directional")]
+            public Light[] Lights;
         }
     }
 }

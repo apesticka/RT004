@@ -2,7 +2,7 @@
 
 namespace rt004
 {
-    internal record struct Ray
+    public record struct Ray
     {
         public Vector3d Origin { get; init; }
         public Vector3d Direction { get; init; }
@@ -14,7 +14,7 @@ namespace rt004
         }
     }
 
-    internal record struct RayHit
+    public record struct RayHit
     {
         public Vector3d Point { get; init; }
         public Vector3d Normal { get; init; }

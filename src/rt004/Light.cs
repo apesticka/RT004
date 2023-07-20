@@ -1,92 +1,109 @@
 ﻿using OpenTK.Mathematics;
+using System.Xml.Serialization;
 
 namespace rt004
 {
-    internal abstract class Light
+    public class Light
     {
-        protected Colorf intensity;
+        [XmlIgnore] public Colorf Intensity;
 
-        protected Light(Colorf intensity)
+        [XmlAttribute("intensity")]
+        public string IntensityConfig { get => Intensity.ToString(); set => Intensity = Colorf.FromString(value); }
+
+        public Light() { }
+
+        public Light(Colorf intensity)
         {
-            this.intensity = intensity;
+            this.Intensity = intensity;
         }
 
-        protected Light(float baseIntensity, Colorf baseColor) : this(baseIntensity * baseColor) { }
+        public Light(float baseIntensity, Colorf baseColor) : this(baseIntensity * baseColor) { }
 
-        protected Light(float intensity) : this(intensity * Colorf.WHITE) { }
+        public Light(float intensity) : this(intensity * Colorf.WHITE) { }
 
-        public abstract Colorf GetIntensity(Vector3d worldPoint);
+        public virtual Colorf GetIntensity(Vector3d worldPoint) => Intensity;
 
         /// <summary>
         /// Returns a *normalized* direction vector
         /// </summary>
-        public abstract Vector3d GetDirection(Vector3d worldPoint);
+        public virtual Vector3d GetDirection(Vector3d worldPoint) => Vector3d.Zero;
     }
 
-    internal abstract class PositionedLight : Light
+    public abstract class PositionedLight : Light
     {
-        public Vector3d position;
+        [XmlIgnore] public Vector3d Position;
 
+        [XmlAttribute("position")]
+        public string PositionConfig { get => Position.ToString(); set => Position = Config.VectorFromString(value); }
+
+        protected PositionedLight() { }
         protected PositionedLight(Colorf intensity) : base(intensity) { }
         protected PositionedLight(float baseIntensity, Colorf baseColor) : base(baseIntensity, baseColor) { }
         protected PositionedLight(float intensity) : base(intensity) { }
     }
 
-    internal class DirectionalLight : Light
+    public class DirectionalLight : Light
     {
-        Vector3d direction;
+        [XmlIgnore] Vector3d Direction;
+
+        [XmlAttribute("direction")]
+        public string DirectionConfig { set => Direction = Config.VectorFromString(value); }
+
+        public DirectionalLight() { }
 
         public DirectionalLight(Vector3d direction, Colorf intensity) : base(intensity)
         {
-            this.direction = direction;
+            this.Direction = direction;
         }
 
         public DirectionalLight(Vector3d direction, float intensity) : base(intensity)
         {
-            this.direction = direction.Normalized();
+            this.Direction = direction.Normalized();
         }
 
         public DirectionalLight(Vector3d direction, float baseIntensity, Colorf baseColor) : base(baseIntensity, baseColor)
         {
-            this.direction = direction;
+            this.Direction = direction;
         }
 
         public override Colorf GetIntensity(Vector3d worldPoint)
         {
-            return intensity;
+            return Intensity;
         }
 
         public override Vector3d GetDirection(Vector3d worldPoint)
         {
-            return direction;
+            return Direction;
         }
     }
 
-    internal class PointLight : PositionedLight
+    public class PointLight : PositionedLight
     {
+        public PointLight() { }
+
         public PointLight(Vector3d position, Colorf intensity) : base(intensity)
         {
-            this.position = position;
+            this.Position = position;
         }
 
         public PointLight(Vector3d position, float intensity) : base(intensity)
         {
-            this.position = position;
+            this.Position = position;
         }
 
         public PointLight(Vector3d position, float baseIntensity, Colorf baseColor) : base(baseIntensity, baseColor)
         {
-            this.position = position;
+            this.Position = position;
         }
 
         public override Vector3d GetDirection(Vector3d worldPoint)
         {
-            return (worldPoint - position).Normalized();
+            return (worldPoint - Position).Normalized();
         }
 
         public override Colorf GetIntensity(Vector3d worldPoint)
         {
-            return intensity/* / (float)(worldPoint - position).LengthSquared*/;
+            return Intensity/* / (float)(worldPoint - position).LengthSquared*/;
         }
     }
 }
