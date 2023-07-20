@@ -9,9 +9,40 @@ namespace rt004
 {
     internal class Scene
     {
+        const int RECURSION_DEPTH = 8;
+
         public Shape[] shapes { get; init; }
         public Light[] lights { get; init; }
         public Camera cam { get; init; }
+
+        public Colorf Evaluate(Ray ray, int depth = 0)
+        {
+            if (depth > RECURSION_DEPTH) return Colorf.BLACK;
+
+            RayHit? closest = null;
+            foreach (var shape in shapes)
+            {
+                RayHit? hit = shape.IntersectRay(ray);
+                if (closest == null || (hit != null && hit.Value.Distance < closest.Value.Distance))
+                    closest = hit;
+            }
+
+
+            if (closest.HasValue)
+            {
+                RayHit hit = closest.Value;
+
+                Material mat = hit.Shape.material ?? Program.DefaultMaterial;
+
+                Colorf color = mat.Evaluate(this, hit.Point, -ray.Direction, hit.Normal, Program.AmbientIntensity, depth);
+
+                return color;
+            }
+            else
+            {
+                return Config.BackgroundColor;
+            }
+        }
 
         public void Render(FloatImage image)
         {
@@ -19,30 +50,15 @@ namespace rt004
             {
                 for (int y = 0; y < image.Height; y++)
                 {
+                    //if (x == image.Width / 2 && y == image.Height / 2)
+                    if (x == 50 && y == 350)
+                        Console.WriteLine();
+
                     Ray ray = cam.GenerateRay(x, y);
-                    RayHit? closest = null;
-                    foreach (var shape in shapes)
-                    {
-                        RayHit? hit = shape.IntersectRay(ray);
-                        if (closest == null || (hit != null && hit.Value.Distance < closest.Value.Distance))
-                            closest = hit;
-                    }
 
+                    Colorf color = Evaluate(ray);
 
-                    if (closest.HasValue)
-                    {
-                        RayHit hit = closest.Value;
-
-                        Material mat = hit.Shape.material ?? Program.DefaultMaterial;
-
-                        Colorf color = mat.Evaluate(lights, hit.Point, -ray.Direction, hit.Normal, Program.AmbientIntensity, shapes);
-
-                        image.PutPixel(x, y, (float[])color);
-                    }
-                    else
-                    {
-                        image.PutPixel(x, y, (float[])Config.BackgroundColor);
-                    }
+                    image.PutPixel(x, y, (float[])color);
                 }
             }
         }

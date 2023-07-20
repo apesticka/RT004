@@ -46,7 +46,14 @@ namespace rt004
             double t1 = (-b - sqrtD) / (2 * a);
             double t2 = (-b + sqrtD) / (2 * a);
 
+            if (t1 < 0 && t2 < 0) return null;
+
             double distance = Math.Min(t1, t2);
+            if (distance < 0)
+            {
+                if (distance == t1) distance = t2;
+                if (distance == t2) distance = t1;
+            }
             Vector3d point = ray.Origin + distance * ray.Direction;
             Vector3d normal = (point - position).Normalized();
 
@@ -61,15 +68,17 @@ namespace rt004
 
         public override RayHit? IntersectRay(Ray ray)
         {
-            ray.Direction.Normalize();
-            double D = -Vector3d.Dot(normal, point);
-            double num = D + Vector3d.Dot(ray.Origin, normal);
-            double denom = Vector3d.Dot(ray.Direction, normal);
-            //if (denom < 0.001) return null;
+            Vector3d dir = Vector3d.Normalize(ray.Direction);
+            Vector3d originOffset = ray.Origin - point;
 
-            double t = -num / denom;
+            double num = -Vector3d.Dot(normal, originOffset);
+            double denom = Vector3d.Dot(normal, dir);
+
+            if (Math.Abs(denom) < 0.0001) return null;
+
+            double t = num / denom;
             if (t >= 0)
-                return new RayHit { Point = ray.Origin + ray.Direction * t, Normal = normal, Distance = t, Shape = this };
+                return new RayHit { Point = ray.Origin + dir * t, Normal = normal, Distance = t, Shape = this };
             else
                 return null;
         }

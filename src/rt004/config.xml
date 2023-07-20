@@ -1,6 +1,6 @@
 ﻿<config>
-	<width>800</width>
-	<height>600</height>
+	<width>600</width>
+	<height>450</height>
 	<output>demo.pfm</output>
 	<background>
 		<color>
