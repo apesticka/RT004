@@ -3,17 +3,17 @@ using System.Xml.Serialization;
 
 namespace rt004
 {
-    public abstract class Shape
+    public abstract class ShapeNode : SceneConfig.GraphNode
     {
         [XmlAttribute("material")]
         public string MaterialString;
         [XmlIgnore]
         public Material Material => Config.Instance.Materials.Materials[MaterialString];
 
-        public abstract RayHit? IntersectRay(Ray ray);
+        //public abstract RayHit? IntersectRay(Ray ray);
     }
 
-    public sealed class Sphere : Shape
+    public sealed class Sphere : ShapeNode
     {
         [XmlIgnore] public Vector3d Center;
         [XmlAttribute("radius")] public double Radius;
@@ -68,7 +68,7 @@ namespace rt004
         }
     }
 
-    public sealed class Plane : Shape
+    public sealed class Plane : ShapeNode
     {
         [XmlIgnore] public Vector3d Point;
         [XmlIgnore] public Vector3d Normal;

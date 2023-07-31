@@ -36,31 +36,7 @@ namespace rt004
             {
                 Vector3d lightDir = -light.GetDirection(point);
 
-                Ray ray = new Ray { Origin = point + 0.00001 * lightDir, Direction = lightDir };
-                bool found = false;
-                foreach (Shape shape in scene.shapes)
-                {
-                    RayHit? hit = shape.IntersectRay(ray);
-                    
-                    if (light is PositionedLight positioned)
-                    {
-                        if (hit != null && hit.Value.Distance > 0 && hit.Value.Distance < (positioned.Position - point).Length)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if (hit != null && hit.Value.Distance > 0)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-                if (found) continue;
-                    
+                if (!light.VisibleFrom(point, scene)) continue;
 
                 Colorf lightIntensity = light.GetIntensity(point);
                 Vector3d reflectionDir = 2 * normal * Vector3d.Dot(eye, normal) - eye;

@@ -4,6 +4,8 @@ using System.Xml.Serialization;
 
 namespace rt004
 {
+    // TODO: shadows, reflections, fov
+
     [XmlRoot("config")]
     public class Config
     {
@@ -27,7 +29,7 @@ namespace rt004
             instance = (Config)serializer.Deserialize(fs);
             Console.WriteLine("Config loaded:");
             Console.WriteLine($"    Materials: {Instance.Materials.MaterialsList.Count}");
-            Console.WriteLine($"    Shapes: {Instance.Scene.Shapes.Shapes.Length}");
+            //Console.WriteLine($"    Shapes: {Instance.Scene.Shapes.Shapes.Length}");
             Console.WriteLine($"    Lights: {Instance.Scene.Lights.Lights.Length} + ambient");
             Console.WriteLine();
 
@@ -41,12 +43,15 @@ namespace rt004
 
         public Scene CreateScene()
         {
-            Shape[] shapes = Scene.Shapes.Shapes;
+            Scene.CalculateInverseMatrices();
+
+            ShapeNode[] shapes = Scene.GetShapes();
             Light[] lights = Scene.Lights.Lights;
             Camera cam = Camera.CreateCamera();
 
             return new Scene
             {
+                Graph = Scene.GraphRoot,
                 shapes = shapes,
                 lights = lights,
                 cam = cam
@@ -138,14 +143,48 @@ namespace rt004
 
     public class SceneConfig
     {
-        [XmlElement("shapes")] public ShapesConfig Shapes;
+        [XmlElement("graph")] public TransformNode GraphRoot;
         [XmlElement("lights")] public LightsConfig Lights;
+        [XmlElement("transform")] public TransformNode transform;
+
+        public ShapeNode[] GetShapes()
+        {
+            List<ShapeNode> shapes = new List<ShapeNode>();
+
+            void AddChildren(TransformNode node)
+            {
+                foreach (var child in node.Children)
+                {
+                    if (child is TransformNode transform) AddChildren(transform);
+                    else if (child is ShapeNode shape) shapes.Add(shape);
+                }
+            }
+
+            AddChildren(GraphRoot);
+
+            return shapes.ToArray();
+        }
+
+        public void CalculateInverseMatrices()
+        {
+            void ProcessNode(TransformNode node)
+            {
+                node.InverseMatrix = node.Matrix.Inverted();
+
+                foreach (var child in node.Children)
+                {
+                    if (child is TransformNode transform) ProcessNode(transform);
+                }
+            }
+
+            ProcessNode(GraphRoot);
+        }
 
         public class ShapesConfig
         {
             [XmlElement(typeof(Sphere), ElementName = "sphere")]
             [XmlElement(typeof(Plane), ElementName = "plane")]
-            public Shape[] Shapes;
+            public ShapeNode[] Shapes;
         }
 
         public class LightsConfig
@@ -156,6 +195,80 @@ namespace rt004
             [XmlElement(typeof(PointLight), ElementName = "point")]
             [XmlElement(typeof(DirectionalLight), ElementName = "directional")]
             public Light[] Lights;
+        }
+
+        public abstract class GraphNode
+        {
+            public abstract RayHit? IntersectRay(Ray ray);
+        }
+
+        public class TransformNode : GraphNode
+        {
+            [XmlIgnore] public Matrix4d Matrix = Matrix4d.Identity;
+            [XmlIgnore] public Matrix4d InverseMatrix;
+
+            [XmlElement(typeof(TransformNode), ElementName = "transform")]
+            [XmlElement(typeof(Sphere), ElementName = "sphere")]
+            [XmlElement(typeof(Plane), ElementName = "plane")]
+            public GraphNode[] Children;
+
+            public override RayHit? IntersectRay(Ray ray)
+            {
+                Vector3d transformedOrigin = new Vector3d(InverseMatrix * new Vector4d(ray.Origin, 1));
+                Vector3d transformedDirection = new Vector3d(InverseMatrix * new Vector4d(ray.Direction, 0));
+                Ray transformedRay = new Ray { Origin = transformedOrigin, Direction = transformedDirection };
+
+                RayHit? closest = null;
+                foreach (var child in Children)
+                {
+                    RayHit? hit = child.IntersectRay(transformedRay);
+                    if (closest == null || (hit != null && hit.Value.Distance < closest.Value.Distance))
+                        closest = hit;
+                }
+                return closest?.Transform(Matrix, InverseMatrix);
+            }
+
+            [XmlAttribute("translate")] public string TranslateConfig
+            {
+                get => "";
+
+                set
+                {
+                    Vector3d translationVector = Config.VectorFromString(value);
+                    Console.WriteLine($"Translate by: {translationVector}");
+                    Matrix4d translationMatrix = Matrix4d.CreateTranslation(translationVector);
+                    translationMatrix.Transpose();
+                    Matrix = translationMatrix * Matrix;
+                }
+            }
+
+            [XmlAttribute("rotate")] public string RotateConfig
+            {
+                get => "";
+
+                set
+                {
+                    Vector3d eulerAngles = Config.VectorFromString(value) * Math.PI / 180.0;
+                    Console.WriteLine($"Rotate by: {eulerAngles}");
+                    Matrix4d rotationMatrix = Matrix4d.CreateFromQuaternion(Quaterniond.FromEulerAngles(eulerAngles));
+                    rotationMatrix.Transpose();
+                    Matrix = rotationMatrix * Matrix;
+                }
+            }
+
+            [XmlAttribute("scale")] public string ScaleConfig
+            {
+                get => "";
+
+                set
+                {
+                    Vector3d scalingVector = Config.VectorFromString(value);
+                    Console.WriteLine($"Scale by: {scalingVector}");
+                    Matrix4d scalingMatrix = Matrix4d.Scale(scalingVector);
+                    scalingMatrix.Transpose();
+                    Matrix = scalingMatrix * Matrix;
+                }
+            }
         }
     }
 }

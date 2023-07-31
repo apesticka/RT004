@@ -9,24 +9,30 @@ namespace rt004
 {
     public class Scene
     {
-        static int RECURSION_DEPTH => Config.Instance.General.MaxDepth;
-
-        public Shape[] shapes { get; init; }
+        public ShapeNode[] shapes { get; init; }
+        public SceneConfig.GraphNode Graph;
         public Light[] lights { get; init; }
         public Camera cam { get; init; }
 
-        public Colorf Evaluate(Ray ray, int depth = 0)
+        public RayHit? IntersectRay(Ray ray)
         {
-            if (depth > RECURSION_DEPTH) return Colorf.BLACK;
+            return Graph.IntersectRay(ray);
 
             RayHit? closest = null;
             foreach (var shape in shapes)
             {
                 RayHit? hit = shape.IntersectRay(ray);
-                if (closest == null || (hit != null && hit.Value.Distance < closest.Value.Distance))
+                if (closest == null || (hit != null && closest.Value.Distance > hit.Value.Distance))
                     closest = hit;
             }
+            return closest;
+        }
 
+        public Colorf Evaluate(Ray ray, int depth = 0)
+        {
+            if (depth > Config.Instance.General.MaxDepth) return Colorf.BLACK;
+
+            RayHit? closest = IntersectRay(ray);
 
             if (closest.HasValue)
             {
@@ -50,10 +56,6 @@ namespace rt004
             {
                 for (int y = 0; y < image.Height; y++)
                 {
-                    //if (x == image.Width / 2 && y == image.Height / 2)
-                    if (x == 50 && y == 350)
-                        Console.WriteLine();
-
                     Ray ray = cam.GenerateRay(x, y);
 
                     Colorf color = Evaluate(ray);

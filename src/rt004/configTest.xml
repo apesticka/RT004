@@ -10,9 +10,9 @@
   <camera>
 	  <width>600</width>
 	  <height>450</height>
-    <center x="0.6" y="100.0" z="0"/>
-    <dir x="0.0" y="-1" z="0.0"/>
-    <up x="0.0" y="0.0" z="1.0"/>
+    <center x="0.0" y="0.0" z="-5.6"/>
+    <dir x="0.0" y="0.0" z="1.0"/>
+    <up x="0.0" y="1.0" z="0.0"/>
     <fov>40</fov>
   </camera>
 
@@ -27,18 +27,9 @@
 
   <scene>
     <graph>
-      <transform>
-        <transform translate="[-0.5,0,0]" rotate="[0,0,10]" scale="[0.5,0.5,0.5]">
-          <sphere material="yellow" radius="1.0" center="[0.0,1.0,0.0]"/>
-          <plane material="white" point="[0.0,-1.3,0.0]" normal="[0.0,1.0,0.0]"/>
-        </transform>
-
-        <transform translate="[0,0,0]">
-          <sphere material="red" radius="0.1" center="[-0.7,0.7,-0.8]"/>
-          <transform>
-            <sphere material="gold" radius="0.5" center="[1.5,0.6,0.1]"/>
-          </transform>
-          <sphere material="blue" radius="0.6" center="[1.4,-0.7,-0.5]"/>
+      <transform scale="[2,0.5,2]">
+        <transform rotate="[0,0,0]">
+          <sphere material="yellow" radius="1.0" center="[0.0,0.0,0.0]"/>
         </transform>
       </transform>
     </graph>

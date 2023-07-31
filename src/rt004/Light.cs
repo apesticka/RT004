@@ -1,4 +1,5 @@
 ﻿using OpenTK.Mathematics;
+using System.Drawing;
 using System.Xml.Serialization;
 
 namespace rt004
@@ -27,6 +28,8 @@ namespace rt004
         /// Returns a *normalized* direction vector
         /// </summary>
         public virtual Vector3d GetDirection(Vector3d worldPoint) => Vector3d.Zero;
+
+        public virtual bool VisibleFrom(Vector3d worldPoint, Scene scene) => true;
     }
 
     public abstract class PositionedLight : Light
@@ -40,6 +43,23 @@ namespace rt004
         protected PositionedLight(Colorf intensity) : base(intensity) { }
         protected PositionedLight(float baseIntensity, Colorf baseColor) : base(baseIntensity, baseColor) { }
         protected PositionedLight(float intensity) : base(intensity) { }
+
+        public override bool VisibleFrom(Vector3d worldPoint, Scene scene)
+        {
+            Vector3d lightDir = -GetDirection(worldPoint);
+
+            Ray ray = new Ray { Origin = worldPoint + 0.00001 * lightDir, Direction = lightDir };
+
+            foreach (ShapeNode shape in scene.shapes)
+            {
+                RayHit? hit = shape.IntersectRay(ray);
+
+                if (hit != null && hit.Value.Distance > 0 && hit.Value.Distance < Vector3d.Distance(Position, worldPoint))
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     public class DirectionalLight : Light
@@ -47,7 +67,7 @@ namespace rt004
         [XmlIgnore] Vector3d Direction;
 
         [XmlAttribute("direction")]
-        public string DirectionConfig { set => Direction = Config.VectorFromString(value); }
+        public string DirectionConfig { get => Direction.ToString(); set => Direction = Config.VectorFromString(value); }
 
         public DirectionalLight() { }
 
@@ -74,6 +94,23 @@ namespace rt004
         public override Vector3d GetDirection(Vector3d worldPoint)
         {
             return Direction;
+        }
+
+        public override bool VisibleFrom(Vector3d worldPoint, Scene scene)
+        {
+            Vector3d lightDir = -GetDirection(worldPoint);
+
+            Ray ray = new Ray { Origin = worldPoint + 0.00001 * lightDir, Direction = lightDir };
+
+            foreach (ShapeNode shape in scene.shapes)
+            {
+                RayHit? hit = shape.IntersectRay(ray);
+
+                if (hit != null && hit.Value.Distance > 0)
+                    return false;
+            }
+
+            return true;
         }
     }
 

@@ -13,13 +13,13 @@ internal class Program
     static void Main(string[] args)
     {
         Config.Load(args[0]);
+        //Config.Load("configTest.xml");
 
         Material yellow = new PhongMaterial { Ambient = 0.1f, Diffuse = 0.8f, Specular = 0.2f, Highlight = 10, Color = new Colorf(1, 1, 0) };
         Material blue = new PhongMaterial { Ambient = 0.1f, Diffuse = 0.5f, Specular = 0.5f, Highlight = 150, Color = new Colorf(0.2f, 0.3f, 1f) };
         Material red = new PhongMaterial { Ambient = 0.1f, Diffuse = 0.6f, Specular = 0.4f, Highlight = 80, Color = new Colorf(0.8f, 0.2f, 0.2f) };
         Material gold = new PhongMaterial { Ambient = 0.2f, Diffuse = 0.2f, Specular = 0.8f, Highlight = 400, Color = new Colorf(0.3f, 0.2f, 0.0f) };
         Material white = new PhongMaterial { Ambient = 0.1f, Diffuse = 0.6f, Specular = 0.4f, Highlight = 80, Color = new Colorf(0.9f, 0.9f, 0.9f) };
-
 
         //Scene scene = new()
         //{
@@ -103,5 +103,15 @@ internal class Program
         fi.SavePFM(Config.Instance.General.OutputFilename);
 
         Console.WriteLine("HDR image is finished.");
+
+        //System.Diagnostics.Process.Start("demo.pfm");
+
+        new System.Diagnostics.Process
+        {
+            StartInfo = new System.Diagnostics.ProcessStartInfo("demo.pfm")
+            {
+                UseShellExecute = true
+            }
+        }.Start();
     }
 }
