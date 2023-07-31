@@ -29,7 +29,6 @@ namespace rt004
             instance = (Config)serializer.Deserialize(fs);
             Console.WriteLine("Config loaded:");
             Console.WriteLine($"    Materials: {Instance.Materials.MaterialsList.Count}");
-            //Console.WriteLine($"    Shapes: {Instance.Scene.Shapes.Shapes.Length}");
             Console.WriteLine($"    Lights: {Instance.Scene.Lights.Lights.Length} + ambient");
             Console.WriteLine();
 
@@ -43,36 +42,19 @@ namespace rt004
 
         public Scene CreateScene()
         {
-            Scene.CalculateInverseMatrices();
+            SceneGraph graph = new SceneGraph(Scene.GraphRoot);
 
-            ShapeNode[] shapes = Scene.GetShapes();
+            graph.CalculateInverseMatrices();
+
             Light[] lights = Scene.Lights.Lights;
             Camera cam = Camera.CreateCamera();
 
             return new Scene
             {
-                Graph = Scene.GraphRoot,
-                shapes = shapes,
-                lights = lights,
-                cam = cam
+                Graph = graph,
+                Lights = lights,
+                Cam = cam
             };
-        }
-
-        public struct Vector3
-        {
-            [XmlAttribute("x")] public double X;
-            [XmlAttribute("y")] public double Y;
-            [XmlAttribute("z")] public double Z;
-
-            public static implicit operator Vector3d(Vector3 v)
-            {
-                return new Vector3d(v.X, v.Y, v.Z);
-            }
-
-            public override string ToString()
-            {
-                return ((Vector3d)this).ToString();
-            }
         }
 
         public static Vector3d VectorFromString(string vectorString)
@@ -89,32 +71,40 @@ namespace rt004
 
     public class GeneralConfig
     {
-        [XmlElement("shadows")]
+        [XmlAttribute("shadows")]
         public bool Shadows;
-        [XmlElement("reflections")]
+        [XmlAttribute("reflections")]
         public bool Reflections;
-        [XmlElement("maxdepth")]
+        [XmlAttribute("maxdepth")]
         public int MaxDepth;
-        [XmlElement("background")]
-        public Colorf BackgroundColor;
-        [XmlElement("output")]
+        [XmlAttribute("output")]
         public string OutputFilename;
+
+        public Colorf BackgroundColor;
+
+        [XmlAttribute("background")]
+        public string BackgroundConfig { get => BackgroundColor.ToString(); set => BackgroundColor = Colorf.FromString(value); }
     }
 
     public class CameraConfig
     {
-        [XmlElement("width")]
+        [XmlAttribute("width")]
         public int Width;
-        [XmlElement("height")]
+        [XmlAttribute("height")]
         public int Height;
-        [XmlElement("center")]
-        public Config.Vector3 Center;
-        [XmlElement("dir")]
-        public Config.Vector3 Direction;
-        [XmlElement("up")]
-        public Config.Vector3 Up;
-        [XmlElement("fov")]
+        [XmlAttribute("fov")]
         public double Fov;
+
+        public Vector3d Center;
+        public Vector3d Direction;
+        public Vector3d Up;
+
+        [XmlAttribute("center")]
+        public string CenterConfig { get => Center.ToString(); set => Center = Config.VectorFromString(value); }
+        [XmlAttribute("dir")]
+        public string DirectionConfig { get => Direction.ToString(); set => Direction = Config.VectorFromString(value); }
+        [XmlAttribute("up")]
+        public string UpConfig { get => Up.ToString(); set => Up = Config.VectorFromString(value); }
 
         internal Camera CreateCamera()
         {
@@ -143,132 +133,17 @@ namespace rt004
 
     public class SceneConfig
     {
-        [XmlElement("graph")] public TransformNode GraphRoot;
+        [XmlElement("graph")] public SceneGraph.TransformNode GraphRoot;
         [XmlElement("lights")] public LightsConfig Lights;
-        [XmlElement("transform")] public TransformNode transform;
-
-        public ShapeNode[] GetShapes()
-        {
-            List<ShapeNode> shapes = new List<ShapeNode>();
-
-            void AddChildren(TransformNode node)
-            {
-                foreach (var child in node.Children)
-                {
-                    if (child is TransformNode transform) AddChildren(transform);
-                    else if (child is ShapeNode shape) shapes.Add(shape);
-                }
-            }
-
-            AddChildren(GraphRoot);
-
-            return shapes.ToArray();
-        }
-
-        public void CalculateInverseMatrices()
-        {
-            void ProcessNode(TransformNode node)
-            {
-                node.InverseMatrix = node.Matrix.Inverted();
-
-                foreach (var child in node.Children)
-                {
-                    if (child is TransformNode transform) ProcessNode(transform);
-                }
-            }
-
-            ProcessNode(GraphRoot);
-        }
-
-        public class ShapesConfig
-        {
-            [XmlElement(typeof(Sphere), ElementName = "sphere")]
-            [XmlElement(typeof(Plane), ElementName = "plane")]
-            public ShapeNode[] Shapes;
-        }
 
         public class LightsConfig
         {
             [XmlElement("ambient")]
-            public Light Ambient;
+            public AmbientLight Ambient;
 
             [XmlElement(typeof(PointLight), ElementName = "point")]
             [XmlElement(typeof(DirectionalLight), ElementName = "directional")]
             public Light[] Lights;
-        }
-
-        public abstract class GraphNode
-        {
-            public abstract RayHit? IntersectRay(Ray ray);
-        }
-
-        public class TransformNode : GraphNode
-        {
-            [XmlIgnore] public Matrix4d Matrix = Matrix4d.Identity;
-            [XmlIgnore] public Matrix4d InverseMatrix;
-
-            [XmlElement(typeof(TransformNode), ElementName = "transform")]
-            [XmlElement(typeof(Sphere), ElementName = "sphere")]
-            [XmlElement(typeof(Plane), ElementName = "plane")]
-            public GraphNode[] Children;
-
-            public override RayHit? IntersectRay(Ray ray)
-            {
-                Vector3d transformedOrigin = new Vector3d(InverseMatrix * new Vector4d(ray.Origin, 1));
-                Vector3d transformedDirection = new Vector3d(InverseMatrix * new Vector4d(ray.Direction, 0));
-                Ray transformedRay = new Ray { Origin = transformedOrigin, Direction = transformedDirection };
-
-                RayHit? closest = null;
-                foreach (var child in Children)
-                {
-                    RayHit? hit = child.IntersectRay(transformedRay);
-                    if (closest == null || (hit != null && hit.Value.Distance < closest.Value.Distance))
-                        closest = hit;
-                }
-                return closest?.Transform(Matrix, InverseMatrix);
-            }
-
-            [XmlAttribute("translate")] public string TranslateConfig
-            {
-                get => "";
-
-                set
-                {
-                    Vector3d translationVector = Config.VectorFromString(value);
-                    Console.WriteLine($"Translate by: {translationVector}");
-                    Matrix4d translationMatrix = Matrix4d.CreateTranslation(translationVector);
-                    translationMatrix.Transpose();
-                    Matrix = translationMatrix * Matrix;
-                }
-            }
-
-            [XmlAttribute("rotate")] public string RotateConfig
-            {
-                get => "";
-
-                set
-                {
-                    Vector3d eulerAngles = Config.VectorFromString(value) * Math.PI / 180.0;
-                    Console.WriteLine($"Rotate by: {eulerAngles}");
-                    Matrix4d rotationMatrix = Matrix4d.CreateFromQuaternion(Quaterniond.FromEulerAngles(eulerAngles));
-                    rotationMatrix.Transpose();
-                    Matrix = rotationMatrix * Matrix;
-                }
-            }
-
-            [XmlAttribute("scale")] public string ScaleConfig
-            {
-                get => "";
-
-                set
-                {
-                    Vector3d scalingVector = Config.VectorFromString(value);
-                    Console.WriteLine($"Scale by: {scalingVector}");
-                    Matrix4d scalingMatrix = Matrix4d.Scale(scalingVector);
-                    scalingMatrix.Transpose();
-                    Matrix = scalingMatrix * Matrix;
-                }
-            }
         }
     }
 }

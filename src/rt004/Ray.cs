@@ -18,14 +18,6 @@ namespace rt004
     {
         public Vector3d Point { get; init; }
         public Vector3d Normal { get; init; }
-        public double Distance { get; init; }
         public ShapeNode Shape { get; init; }
-
-        public RayHit Transform(Matrix4d direct, Matrix4d inverse) => new RayHit
-        {
-            Point = new Vector3d(direct * new Vector4d(Point, 1)),
-            Normal = new Vector3d(Matrix4d.Transpose(inverse) * new Vector4d(Normal, 0)).Normalized(),
-            Shape = Shape
-        };
     }
 }

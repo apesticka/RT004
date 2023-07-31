@@ -9,23 +9,13 @@ namespace rt004
 {
     public class Scene
     {
-        public ShapeNode[] shapes { get; init; }
-        public SceneConfig.GraphNode Graph;
-        public Light[] lights { get; init; }
-        public Camera cam { get; init; }
+        public SceneGraph Graph;
+        public Light[] Lights { get; init; }
+        public Camera Cam { get; init; }
 
         public RayHit? IntersectRay(Ray ray)
         {
             return Graph.IntersectRay(ray);
-
-            RayHit? closest = null;
-            foreach (var shape in shapes)
-            {
-                RayHit? hit = shape.IntersectRay(ray);
-                if (closest == null || (hit != null && closest.Value.Distance > hit.Value.Distance))
-                    closest = hit;
-            }
-            return closest;
         }
 
         public Colorf Evaluate(Ray ray, int depth = 0)
@@ -56,7 +46,7 @@ namespace rt004
             {
                 for (int y = 0; y < image.Height; y++)
                 {
-                    Ray ray = cam.GenerateRay(x, y);
+                    Ray ray = Cam.GenerateRay(x, y);
 
                     Colorf color = Evaluate(ray);
 
