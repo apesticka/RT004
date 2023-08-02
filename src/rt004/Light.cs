@@ -35,7 +35,7 @@ namespace rt004
         {
             Vector3d lightDir = -GetDirection(worldPoint);
 
-            Ray ray = new Ray { Origin = worldPoint + 0.0001 * lightDir, Direction = lightDir };
+            Ray ray = new Ray { Origin = worldPoint, Direction = lightDir };
 
             RayHit? hit = scene.IntersectRay(ray);
 
@@ -71,7 +71,7 @@ namespace rt004
         {
             Vector3d lightDir = -GetDirection(worldPoint);
 
-            Ray ray = new Ray { Origin = worldPoint + 0.00001 * lightDir, Direction = lightDir };
+            Ray ray = new Ray { Origin = worldPoint, Direction = lightDir };
 
             RayHit? hit = scene.IntersectRay(ray);
 

@@ -50,9 +50,10 @@ namespace rt004
             double t1 = (-b - sqrtD) / (2 * a);
             double t2 = (-b + sqrtD) / (2 * a);
 
-            double distance = Math.Min(t1, t2);
+            if (t1 < 0 && t2 < 0) return null;
 
-            if (distance < 0) return null;
+            double distance = Math.Min(t1, t2);
+            if (distance < 0) distance = Math.Max(t1, t2);
 
             Vector3d point = ray.Origin + distance * ray.Direction;
             Vector3d normal = (point - Center).Normalized();

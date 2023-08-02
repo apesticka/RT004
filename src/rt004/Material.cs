@@ -29,8 +29,6 @@ namespace rt004
 
         private void ProcessLight(ref Colorf color, Light light, Scene scene, Vector3d point, Vector3d eye, Vector3d normal, int depth)
         {
-            if (!light.VisibleFrom(point, scene)) return;
-
             Vector3d lightDir = -light.GetDirection(point);
             Colorf lightIntensity = light.GetIntensity(point);
 
@@ -41,7 +39,7 @@ namespace rt004
             color += Specular * Specular * scene.Evaluate(reflectionRay, depth + 1);
 
             double dot = Vector3d.Dot(lightDir, normal);
-            if (dot <= 0) return;
+            if (dot <= 0 || !light.VisibleFrom(point + 0.0001 * normal, scene)) return;
 
             Colorf diffuse = Diffuse * Color * lightIntensity * (float)dot;
 
