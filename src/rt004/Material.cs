@@ -27,11 +27,9 @@ namespace rt004
         [XmlAttribute("kS")] public float Specular;
         [XmlAttribute("highlight")] public float Highlight;
 
-        private Colorf ProcessLight(Light light, Scene scene, Vector3d point, Vector3d eye, Vector3d normal, int depth)
+        private void ProcessLight(ref Colorf color, Light light, Scene scene, Vector3d point, Vector3d eye, Vector3d normal, int depth)
         {
-            Colorf color = Colorf.BLACK;
-
-            if (!light.VisibleFrom(point, scene)) return Colorf.BLACK;
+            if (!light.VisibleFrom(point, scene)) return;
 
             Vector3d lightDir = -light.GetDirection(point);
             Colorf lightIntensity = light.GetIntensity(point);
@@ -43,7 +41,7 @@ namespace rt004
             color += Specular * Specular * scene.Evaluate(reflectionRay, depth + 1);
 
             double dot = Vector3d.Dot(lightDir, normal);
-            if (dot <= 0) return Colorf.BLACK;
+            if (dot <= 0) return;
 
             Colorf diffuse = Diffuse * Color * lightIntensity * (float)dot;
 
@@ -53,8 +51,6 @@ namespace rt004
             color += diffuse;
             if (specularDot >= 0)
                 color += specular;
-
-            return color;
         }
 
         public override Colorf Evaluate(Scene scene, Vector3d point, Vector3d eye, Vector3d normal, Colorf ambient, int depth)
@@ -67,7 +63,7 @@ namespace rt004
 
             foreach (Light light in scene.Lights)
             {
-                color += ProcessLight(light, scene, point, eye, normal, depth);
+                ProcessLight(ref color, light, scene, point, eye, normal, depth);
             }
 
             return color.Clamp();
