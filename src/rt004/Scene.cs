@@ -42,9 +42,24 @@ namespace rt004
 
         public void Render(FloatImage image)
         {
-            for (int x = 0; x < image.Width; x++)
+            int x = 0, y = 0;
+            int maxIndex = image.Width * image.Height;
+
+            Task.Run(async () =>
             {
-                for (int y = 0; y < image.Height; y++)
+                int index = 0;
+                while (index < maxIndex - 1)
+                {
+                    index = y + x * image.Height;
+                    float percentage = index / (float)maxIndex;
+                    await Task.Delay(500);
+                    await Console.Out.WriteLineAsync(string.Format("{0:00.00%}", percentage));
+                }
+            });
+
+            for (x = 0; x < image.Width; x++)
+            {
+                for (y = 0; y < image.Height; y++)
                 {
                     Ray ray = Cam.GenerateRay(x, y);
 
